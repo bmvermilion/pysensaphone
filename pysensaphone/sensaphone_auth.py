@@ -23,6 +23,7 @@ def sensaphone_login():
         creds = {'session': r['response']['session'], 'acctid': r['response']['acctid'], 'session_expiration': str(
             datetime.datetime.fromtimestamp(r['response']['session_expiration'] + r['response']['login_timestamp']))}
         if os.environ.get("AWS_EXECUTION_ENV"):
+            # Future - Cache valid credits in AWS
             pass
         else:
             with open('creds.json', 'w') as fp:
@@ -30,7 +31,7 @@ def sensaphone_login():
         print('Auth Success')
         return creds
     else:
-        print('Auth Failure Sensaphone Account ', r['result'])
+        print('Auth Failure Sensaphone Account ', json.dumps(r))
         return False
 
 
@@ -39,7 +40,8 @@ def check_valid_session():
     Check if current session id is valid. If not then login
     """
     if os.environ.get("AWS_EXECUTION_ENV"):
-        sensaphone_login()
+        # Future - Cache valid credits in AWS
+        return sensaphone_login()
     else:
         try:
             with open('creds.json', 'r') as fp:
