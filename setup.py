@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pysensaphone',
-    version='0.3',
+    version='0.4',
     author='Brian Vermilion',
     author_email='brian.vermilion@gmail.com',
     url='https://github.com/bmvermilion/pysensaphone',
