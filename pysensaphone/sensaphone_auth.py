@@ -7,10 +7,24 @@ from pathlib import Path
 from .get_sensaphone import sensaphone_request
 
 
-def sensaphone_login():
+def sensaphone_login() -> dict:
+    """Login to Sensaphone and collect session, acctid and session_expiration
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    dict
+        returns dictionary with session, account id and expiration timestamp,
+            for use with authentication with Sensaphone API.
+
+    TODO
+    -------
+    Cache credential in AWS for retrieval and use if they are still valid.
+        To prevent having to login for every Lambda function run.
     """
-    Login to Sensaphone and collect session, acctid and session_expiration
-    """
+
     username = 'controls@melodywoods.awsapps.com'
     password = decrypt_password()
     login_data = {"request_type": "create", "resource": "login", "user_name": username, "password": password}
@@ -23,7 +37,7 @@ def sensaphone_login():
         creds = {'session': r['response']['session'], 'acctid': r['response']['acctid'], 'session_expiration': str(
             datetime.datetime.fromtimestamp(r['response']['session_expiration'] + r['response']['login_timestamp']))}
         if os.environ.get("AWS_EXECUTION_ENV"):
-            # Future - Cache valid credits in AWS
+            # TODO - Cache valid credentials in AWS
             pass
         else:
             with open('creds.json', 'w') as fp:
@@ -35,12 +49,21 @@ def sensaphone_login():
         return False
 
 
-def check_valid_session():
+def check_valid_session() -> dict:
+    """Check if current session id is valid. If not then login using sensaphone_login()
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+    dict
+        returns dictionary with session, account id and expiration timestamp,
+            for use with authentication with Sensaphone API.
     """
-    Check if current session id is valid. If not then login
-    """
+
     if os.environ.get("AWS_EXECUTION_ENV"):
-        # Future - Cache valid credits in AWS
+        # TODO - Read from cache of valid credentials in AWS
         return sensaphone_login()
     else:
         try:
@@ -56,11 +79,21 @@ def check_valid_session():
             if time_till_expire.total_seconds() / 3660 > 1.0:
                 return creds
             else:
-                print("Sensaphone Creds Expired")
+                print("Sensaphone Credentials Expired")
                 return sensaphone_login()
 
 
-def decrypt_password():
+def decrypt_password() -> str:
+    """Decrypt password stored in .pem file using AWS Key Management Service (KMS).
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+        str
+            returns password as string for use in authentication with Sensaphone.
+        """
 
     path = Path(__file__).parent / "encrypted_controls.pem"
     with open(path, 'r') as encrypted_pem:

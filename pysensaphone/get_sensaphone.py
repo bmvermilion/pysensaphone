@@ -4,10 +4,24 @@ import json
 from urllib.parse import urlparse
 
 
-def sensaphone_request(url, data):
+def sensaphone_request(url: str, data: dict) -> dict:
     """
-    General Sensaphone Sentinel Request
+    Sensaphone Sentinel POST Request
+
+    Parameters
+    ----------
+    url : str
+        Expects the full URL for the Sensaphone REST API endpoint.
+        See - https://wiki.sensaphone.net/index.php/Sensaphone.net_API
+    data : dict
+        payload for the request as specified by API docs.
+
+    Returns
+    -------
+    dict
+        return response as dict from Sensaphone REST API.
     """
+
     try:
         response = requests.post(url=url, data=json.dumps(data))
         r = json.loads(response.text)
@@ -29,9 +43,19 @@ def sensaphone_request(url, data):
         print(f'Other error occurred: {err}')
 
 
-def system_status(creds):
+def system_status(creds: dict) -> list:
     """
     Get all info of devices connected to account and gather high level system status
+
+    Parameters
+    ----------
+    creds : dict
+        Sensaphone credentials returned from sensaphone_auth.sensaphone_login()
+
+    Returns
+    -------
+    list
+        list of dictionaries that contains the device and zone (sensors) id, values and current status.
     """
 
     url = 'https://rest.sensaphone.net/api/v1/device'
@@ -60,63 +84,89 @@ def system_status(creds):
     return devices
 
 
-def device_info(creds, device_id):
-        """
-        Get information about specific devices
-        """
+def device_info(creds: dict, device_id: int) -> list:
+    """
+    Get information about a specific Sensaphone device
 
-        url = 'https://rest.sensaphone.net/api/v1/device'
-        payload = {
-            "request_type": "read",
-            "resource": "device",
-            "acctid": creds['acctid'],
-            "session": creds['session'],
-            "device": [
-                {
-                    "device_id": device_id
-                }
-            ]
-        }
+    Parameters
+    ----------
+    creds : dict
+        Sensaphone credentials returned from sensaphone_auth.sensaphone_login()
+    device_id : int
+        This the Sensaphone device id for which you want data for.
 
-        data = sensaphone_request(url, payload)
+    Returns
+    -------
+    list
+        list of dictionaries that contains the device and zone (sensors) id, values and current status.
+    """
 
-        devices = []
-        for d in data['response']['device']:
-            sensors = []
-            for z in d['zone']:
-                if z['enable']:
-                    sensors.append(
-                        {"name": z['name'], "zone_id": z['zone_id'], "sensor_type": z['type'], "units": z['units'],
-                         "value": z['value']})
-            devices.append(
-                {"name": d['name'], "device_id": d['device_id'], "description": d['description'], "zone": sensors})
+    url = 'https://rest.sensaphone.net/api/v1/device'
+    payload = {
+        "request_type": "read",
+        "resource": "device",
+        "acctid": creds['acctid'],
+        "session": creds['session'],
+        "device": [
+            {
+                "device_id": device_id
+            }
+        ]
+    }
 
-        return devices
+    data = sensaphone_request(url, payload)
+
+    devices = []
+    for d in data['response']['device']:
+        sensors = []
+        for z in d['zone']:
+            if z['enable']:
+                sensors.append(
+                    {"name": z['name'], "zone_id": z['zone_id'], "sensor_type": z['type'], "units": z['units'],
+                     "value": z['value']})
+        devices.append(
+            {"name": d['name'], "device_id": d['device_id'], "description": d['description'], "zone": sensors})
+
+    return devices
 
 
-def device_zone_info(creds, device_id, zone_id):
-        """
-        Get information about a specific zone (sensor/output) on a device
-        """
+def device_zone_info(creds: dict, device_id: int, zone_id: int) -> list:
+    """
+    Get information about a specific zone (sensor/output) on a device
 
-        url = "https://rest.sensaphone.net/api/v1/device/zone"
-        payload = {
-            "request_type": "read",
-            "resource": "device",
-            "acctid": creds['acctid'],
-            "session": creds['session'],
-            "device": [
-                {
-                    "device_id": device_id,
-                    "zone": [
-                        {
-                            "zone_id": zone_id
-                        }
-                    ]
-                }
-            ]
-        }
+    Parameters
+    ----------
+    creds : dict
+        Sensaphone credentials returned from sensaphone_auth.sensaphone_login()
+    device_id : int
+        This the Sensaphone device id for which you want data for.
+    zone_id: int
+        This is the id for the sensor (zone) you want data for.
 
-        data = sensaphone_request(url, payload)
+    Returns
+    -------
+    list
+        list of dictionaries that contains the device and zone (sensors) id, values and current status.
+    """
 
-        return data
+    url = "https://rest.sensaphone.net/api/v1/device/zone"
+    payload = {
+        "request_type": "read",
+        "resource": "device",
+        "acctid": creds['acctid'],
+        "session": creds['session'],
+        "device": [
+            {
+                "device_id": device_id,
+                "zone": [
+                    {
+                        "zone_id": zone_id
+                    }
+                ]
+            }
+        ]
+    }
+
+    data = sensaphone_request(url, payload)
+
+    return data
