@@ -34,7 +34,8 @@ def get_history(creds: dict, hours: int, device_name: str, zone_names: list) -> 
     log_points = get_device_log_points(creds, id_data)
 
     begin_offset = 0
-    # hours * 4 data point every hour (data point every 15 mins) * number of sensors data requested for.
+    # hours * 4 data point every hour  * number of sensors data requested for.
+    # (data point every 15 mins - configurable in Sensaphone)
     record_offset = ((hours * 4) + 1) * len(log_points[0])
     data_log = get_data_log(creds, begin_offset, record_offset, log_points[0])
 
@@ -95,6 +96,8 @@ def get_device_log_points(creds: dict, df: pd.DataFrame) -> list:
         device_id = df.device_id.unique()[0]
     else:
         print('Error, why do we have more than one device id?')
+        print(df)
+        print(df.device_id.unique())
         device_id = None
 
     url = "https://rest.sensaphone.net/api/v1/history/data_log_points"
