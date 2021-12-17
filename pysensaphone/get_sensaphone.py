@@ -27,6 +27,7 @@ def sensaphone_request(url: str, data: dict) -> dict:
         r = json.loads(response.text)
 
         if r['result']['success']:
+            print(data)
             print('API Request Success! ' + urlparse(url).path)
             return r
         else:
@@ -34,6 +35,7 @@ def sensaphone_request(url: str, data: dict) -> dict:
                 print('Session Expired! How?', r)
                 return False
             else:
+                print('sensaphone_request() failure, code: ' + r['result']['code'])
                 print(json.dumps(r))
                 return False
 
@@ -78,8 +80,8 @@ def system_status(creds: dict) -> list:
                     {"name": z['name'], "zone_id": z['zone_id'], "sensor_type": z['type'], "units": z['units'],
                      "value": z['value']})
         devices.append({"name": d['name'], "device_id": d['device_id'], "description": d['description'],
-             "is_online": d['is_online'], "power_value": d['power_value'], "power_status": d['power_status'],
-             "battery_value": d['battery_value'], "battery_status": d['battery_status'], "zone": sensors})
+                        "is_online": d['is_online'], "power_value": d['power_value'], "power_status": d['power_status'],
+                        "battery_value": d['battery_value'], "battery_status": d['battery_status'], "zone": sensors})
 
     return devices
 
