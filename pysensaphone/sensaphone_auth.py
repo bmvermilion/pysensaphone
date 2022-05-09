@@ -25,7 +25,7 @@ def sensaphone_login() -> dict:
         To prevent having to login for every Lambda function run.
     """
 
-    username = 'controls@melodywoods.awsapps.com'
+    username = 'controls@melodywoodscontrols.awsapps.com'
     password = decrypt_password()
     login_data = {"request_type": "create", "resource": "login", "user_name": username, "password": password}
     url = 'https://rest.sensaphone.net/api/v1/login'
@@ -96,8 +96,8 @@ def decrypt_password() -> str:
         """
 
     path = Path(__file__).parent / "encrypted_controls.pem"
-    with open(path, 'r') as encrypted_pem:
+    with open(path, 'rb') as encrypted_pem:
         pem_file = encrypted_pem.read()
 
-    kms = boto3.client('kms', region_name='us-west-2')
-    return kms.decrypt(CiphertextBlob=b64decode(pem_file))['Plaintext'].decode("utf-8")
+    kms = boto3.client('kms', region_name='us-east-1')
+    return kms.decrypt(CiphertextBlob=pem_file)['Plaintext'].decode("utf-8")

@@ -27,7 +27,9 @@ def sensaphone_request(url: str, data: dict) -> dict:
         r = json.loads(response.text)
 
         if r['result']['success']:
-            print(data)
+            if "password" in data:
+                data['password'] = 'HIDDEN'
+            print('sensaphone_request() data: \n', data)
             print('API Request Success! ' + urlparse(url).path)
             return r
         else:
