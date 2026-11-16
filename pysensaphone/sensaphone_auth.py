@@ -2,99 +2,102 @@ import boto3
 import os
 import datetime
 import json
+import logging
 from base64 import b64decode
 from pathlib import Path
+from botocore.exceptions import ClientError
 from .get_sensaphone import sensaphone_request
 
+logger = logging.getLogger(__name__)
+
+# Cache configuration
+SSM_PARAMETER_NAME = os.environ.get("SENSAPHONE_CACHE_PARAMETER", "/sensaphone/session")
+
+def store_session_ssm(creds: dict):
+    """Store session credentials in AWS SSM Parameter Store"""
+    ssm = boto3.client('ssm')
+    try:
+        ssm.put_parameter(
+            Name=SSM_PARAMETER_NAME,
+            Value=json.dumps(creds),
+            Type='SecureString',
+            Overwrite=True
+        )
+        logger.info(f"Successfully cached session in SSM: {SSM_PARAMETER_NAME}")
+    except ClientError as e:
+        logger.error(f"Failed to cache session in SSM: {e}")
+
+def get_session_ssm() -> dict:
+    """Retrieve session credentials from AWS SSM Parameter Store"""
+    ssm = boto3.client('ssm')
+    try:
+        parameter = ssm.get_parameter(Name=SSM_PARAMETER_NAME, WithDecryption=True)
+        return json.loads(parameter['Parameter']['Value'])
+    except (ClientError, json.JSONDecodeError, KeyError):
+        logger.info("No valid session found in SSM cache")
+        return None
 
 def sensaphone_login() -> dict:
-    """Login to Sensaphone and collect session, acctid and session_expiration
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-    dict
-        returns dictionary with session, account id and expiration timestamp,
-            for use with authentication with Sensaphone API.
-
-    TODO
-    -------
-    Cache credential in AWS for retrieval and use if they are still valid.
-        To prevent having to login for every Lambda function run.
-    """
-
-    username = 'controls@melodywoodscontrols.awsapps.com'
+    """Login to Sensaphone and collect session, acctid and session_expiration"""
+    username = os.environ.get("SENSAPHONE_USERNAME", 'controls@melodywoodscontrols.awsapps.com')
     password = decrypt_password()
     login_data = {"request_type": "create", "resource": "login", "user_name": username, "password": password}
     url = 'https://rest.sensaphone.net/api/v1/login'
 
-    print('Attempting to Login to Sensaphone')
+    logger.info('Attempting to Login to Sensaphone')
     r = sensaphone_request(url, login_data)
 
     if r['result']['success']:
-        creds = {'session': r['response']['session'], 'acctid': r['response']['acctid'], 'session_expiration': str(
-            datetime.datetime.fromtimestamp(r['response']['session_expiration'] + r['response']['login_timestamp']))}
+        expiration_timestamp = r['response']['session_expiration'] + r['response']['login_timestamp']
+        creds = {
+            'session': r['response']['session'], 
+            'acctid': r['response']['acctid'], 
+            'session_expiration': str(datetime.datetime.fromtimestamp(expiration_timestamp))
+        }
+        
         if os.environ.get("AWS_EXECUTION_ENV"):
-            # TODO - Cache valid credentials in AWS
-            pass
+            store_session_ssm(creds)
         else:
             with open('creds.json', 'w') as fp:
                 json.dump(creds, fp)
-        print('Auth Success')
+        
+        logger.info('Auth Success')
         return creds
     else:
-        print('Auth Failure Sensaphone Account ', json.dumps(r))
+        logger.error(f"Auth Failure Sensaphone Account: {json.dumps(r)}")
         return False
 
-
 def check_valid_session() -> dict:
-    """Check if current session id is valid. If not then login using sensaphone_login()
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-    dict
-        returns dictionary with session, account id and expiration timestamp,
-            for use with authentication with Sensaphone API.
-    """
-
+    """Check if current session id is valid. If not then login using sensaphone_login()"""
+    creds = None
+    
     if os.environ.get("AWS_EXECUTION_ENV"):
-        # TODO - Read from cache of valid credentials in AWS
-        return sensaphone_login()
+        creds = get_session_ssm()
     else:
         try:
             with open('creds.json', 'r') as fp:
                 creds = json.load(fp)
         except FileNotFoundError:
-            return sensaphone_login()
-        else:
+            pass
+
+    if creds:
+        try:
             session_expiration = datetime.datetime.strptime(creds['session_expiration'], '%Y-%m-%d %H:%M:%S')
             now = datetime.datetime.now()
             time_till_expire = session_expiration - now
 
-            if time_till_expire.total_seconds() / 3660 > 1.0:
+            # If session is valid for more than 1 hour, reuse it
+            if time_till_expire.total_seconds() / 3600 > 1.0:
                 return creds
             else:
-                print("Sensaphone Credentials Expired")
-                return sensaphone_login()
+                logger.info("Sensaphone Credentials Expired or near expiration")
+        except (ValueError, KeyError):
+            logger.warning("Malformed credentials found in cache")
 
+    return sensaphone_login()
 
 def decrypt_password() -> str:
-    """Decrypt password stored in .pem file using AWS Key Management Service (KMS).
-
-    Parameters
-    ----------
-
-    Returns
-    -------
-        str
-            returns password as string for use in authentication with Sensaphone.
-        """
-
+    """Decrypt password stored in .pem file using AWS Key Management Service (KMS)."""
     path = Path(__file__).parent / "encrypted_controls.pem"
     with open(path, 'rb') as encrypted_pem:
         pem_file = encrypted_pem.read()

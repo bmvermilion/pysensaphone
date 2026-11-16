@@ -1,40 +1,22 @@
 # pysensaphone
-Library for interacting with Sensaphone Sentinel REST API for water system control.
 
-## Table of Contents
-* [General info](#general-info)
-* [Setup](#setup)
-* [Usage Example](#usage-example)
-* [Dev Tups](#dev-tips)
-* [License](#license)
-* [Author](#author)
+A Python library for interacting with the Sensaphone Sentinel REST API, specifically tailored for the Melody Woods Water Company infrastructure.
 
-## General info
-This library was created for the Melody Woods Water Company to aid in water production in distribution operations.
-AWS Lambda functions ([melodywoods_water](https://github.com/bmvermilion/melodywoods_water)) utilize this library in order to automate operational tasks as well as alert on potential problems with the water system. 
-See [Sensaphone API](https://wiki.sensaphone.net/index.php/Sensaphone.net_API) for reference to REST API this library is utilizing.
-	
-## Setup
-TODO:
-* Creating .pem file using AWS KMS
-* Install instructions
+## Key Features
+- **Session Caching**: Reduces API calls by caching session tokens in AWS SSM Parameter Store.
+- **Water Logic Engine**: Shared utilities for tank level parsing, 15-minute schedule window checks, and device discovery.
+- **Safety Interlocks**: Integrated support for Dry Run modes and safety-first pump control.
+- **Email Parsing**: Dedicated parser for Sensaphone alert emails (Power/Chlorine).
 
-```
-HERE
-```
+## Modules
+- `sensaphone_auth`: Handles KMS-encrypted login and SSM session caching.
+- `get_sensaphone`: Low-level REST API requests and system status retrieval.
+- `set_sensaphone`: Controls Sentinel relay outputs.
+- `water_logic`: High-level business rules for water production.
+- `email_parser`: Extracts actionable data from alert emails.
 
-## Usage Example
-TODO
+## Development
+This library is deployed as an **AWS Lambda Layer**.
 
-## Dev Tips
-TODO
-
-create pysensaphone .tar.gz for use with AWS Lambda...
-```
-$ python setup.py sdist
-```
-
-## Author
-Brian Vermilion\
-brian.vermilion@gmail.com\
-brian@melodywoods.com
+1. Update code in `pysensaphone/`.
+2. Run `make build` and `make deploy` from the root directory to update the shared Layer across all Lambda functions.
