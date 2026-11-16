@@ -1,7 +1,9 @@
 from .get_sensaphone import sensaphone_request, system_status
 import json
+import logging
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 
 def get_history(creds: dict, hours: int, device_name: str, zone_names: list) -> pd.DataFrame:
     """Get Sentinel Sensor History
@@ -95,9 +97,9 @@ def get_device_log_points(creds: dict, df: pd.DataFrame) -> list:
     if len(df.device_id.unique()) == 1:
         device_id = df.device_id.unique()[0]
     else:
-        print('Error, why do we have more than one device id?')
-        print(df)
-        print(df.device_id.unique())
+        logger.error('Error, why do we have more than one device id?')
+        logger.error(df)
+        logger.error(df.device_id.unique())
         device_id = None
 
     url = "https://rest.sensaphone.net/api/v1/history/data_log_points"
@@ -169,8 +171,8 @@ def get_data_log(creds: dict, begin_offset: int, record_offset: int, log_points:
         # create dataframe from response
         df_data = pd.DataFrame(data['response']['history']['data_log'])
     else:
-        print('ERROR Datalog - No data returned')
-        print(json.dumps(data['result']))
+        logger.error('ERROR Datalog - No data returned')
+        logger.error(json.dumps(data['result']))
         df_data = None
 
     return df_data
