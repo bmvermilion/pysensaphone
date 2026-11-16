@@ -1,8 +1,10 @@
 import requests
 from requests.exceptions import HTTPError
 import json
+import logging
 from urllib.parse import urlparse
 
+logger = logging.getLogger(__name__)
 
 def sensaphone_request(url: str, data: dict) -> dict:
     """
@@ -29,22 +31,22 @@ def sensaphone_request(url: str, data: dict) -> dict:
         if r['result']['success']:
             if "password" in data:
                 data['password'] = 'HIDDEN'
-            print('sensaphone_request() data: \n', data)
-            print('API Request Success! ' + urlparse(url).path)
+            logger.debug(f'sensaphone_request() data: \n{data}')
+            logger.info(f'API Request Success! {urlparse(url).path}')
             return r
         else:
             if r['result']['code'] == 2:
-                print('Session Expired! How?', r)
+                logger.warning(f'Session Expired! {r}')
                 return False
             else:
-                print('sensaphone_request() failure, code: ' + r['result']['code'])
-                print(json.dumps(r))
+                logger.error(f"sensaphone_request() failure, code: {r['result']['code']}")
+                logger.error(json.dumps(r))
                 return False
 
     except HTTPError as http_err:
-        print(f'HTTP error occurred: {http_err}')
+        logger.error(f'HTTP error occurred: {http_err}')
     except Exception as err:
-        print(f'Other error occurred: {err}')
+        logger.error(f'Other error occurred: {err}')
 
 
 def system_status(creds: dict) -> list:
