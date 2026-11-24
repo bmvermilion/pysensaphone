@@ -74,7 +74,11 @@ def is_within_window(timer_str: str, current_time: datetime.datetime, window_min
         logger.error(f"Invalid timer format: {timer_str}")
         return False
 
-def is_within_daily_window(on_str: str, off_str: str, current_time: datetime.datetime) -> bool:
+def is_within_daily_window(
+    on_str: Optional[str],
+    off_str: Optional[str],
+    current_time: datetime.datetime,
+) -> bool:
     """
     Checks if current_time falls inside a broad daily window that may wrap past midnight.
 
@@ -93,6 +97,11 @@ def is_within_daily_window(on_str: str, off_str: str, current_time: datetime.dat
         off_hour, off_minute = map(int, off_str.split(':'))
     except ValueError:
         logger.error(f"Invalid daily window format: on={on_str!r} off={off_str!r}")
+        return False
+
+    if not (0 <= on_hour <= 23 and 0 <= on_minute <= 59
+            and 0 <= off_hour <= 23 and 0 <= off_minute <= 59):
+        logger.error(f"Daily window out of range: on={on_str!r} off={off_str!r}")
         return False
 
     now = current_time.hour * 60 + current_time.minute
