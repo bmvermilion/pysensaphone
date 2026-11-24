@@ -19,4 +19,4 @@ This library provides a high-level interface for controlling Sentinel devices vi
 - `email_parser`: Logic for reacting to emergency alerts (Power/Chlorine).
 
 ## Deployment
-This library is intended to be deployed as an **AWS Lambda Layer**. To update the shared library across all system functions, modify the code here and run `make build` and `make deploy` from the project root.
+This library is intended to be deployed as an **AWS Lambda Layer**. The layer is vendored into the `melodywoods_water` repo; update it there by running `make sync-layer`, `make build` and `make deploy` from that repo's root.
