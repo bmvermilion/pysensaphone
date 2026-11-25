@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pysensaphone"
 version = "0.6.0"
 authors = [
-  { name="Brian Vermilion", email="brian.vermilion@gmail.com" },
+  { name="Brian Vermilion" },
 ]
 description = "Interface for Sensaphone Sentinel Rest API"
 readme = "README.md"
